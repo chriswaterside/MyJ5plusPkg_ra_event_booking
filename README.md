@@ -1,1 +1,2 @@
-# J5plusPkg_ra_event_booking
+RA Event Booking for Joomla 5 and higher
+Works along side RA Library

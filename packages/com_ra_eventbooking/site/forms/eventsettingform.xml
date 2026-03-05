@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form addfieldprefix="Ramblers\Component\Ra_eventbooking\Site\Field">
+  
+    <fieldset name="basic" label="Basic Information">
+        <field name="id" type="text" readonly="true" class="readonly" default="0" description="JGLOBAL_FIELD_ID_DESC"/>
+        <field name="state" default="1" type="list" label="JSTATUS" description="JFIELD_PUBLISHED_DESC" class="inputbox" size="1">
+            <option value="1">JPUBLISHED</option>
+            <option value="0">JUNPUBLISHED</option>
+            <option value="2">JARCHIVED</option>
+            <option value="-2">JTRASHED</option>
+        </field>
+        <field name="ordering"/>
+        <field name="checked_out" type="hidden" filter="unset"/>
+        <field name="checked_out_time" type="hidden" filter="unset"/>
+        <field name="modified_by" type="modifiedby" default="0" label="JGLOBAL_FIELD_MODIFIED_BY_LABEL" description="JGLOBAL_FIELD_MODIFIED_BY_DESC" hidden="true" hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_MODIFIED_BY"/>
+        <field name="event_id" 
+               filter="safehtml" 
+               type="text" 
+               required="true" 
+               label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_EVENT_ID" 
+               description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_EVENT_ID" 
+               hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_EVENT_ID"
+        />
+  
+        <field name="booking_data" 
+               type="editor" 
+               hidden="true" 
+               buttons="true" class="inputbox" filter="safehtml" 
+               label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_BOOKING_DATA" 
+               description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_BOOKING_DATA" 
+               hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_BOOKING_DATA"
+        />
+        <field name="waiting_data" 
+               type="editor" 
+               hidden="true" 
+               buttons="true" class="inputbox" filter="safehtml" 
+               label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_WAITING_DATA" 
+               description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_WAITING_DATA" 
+               hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_WAITING_DATA"
+        />
+        <field name="event_data" 
+               type="editor" 
+               hidden="true" 
+               buttons="true" class="inputbox" filter="safehtml" 
+               label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_EVENT_DATA" 
+               description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_EVENT_DATA"  
+               hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_EVENT_DATA"
+        />
+       
+        <field 
+            name="walk_leader_id" 
+            type="Walkleader" 
+            addfieldprefix="Joomla\Component\com_ra_eventbooking\Field" 
+            required="false" 
+            label="Walk/Event Leader" 
+            description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
+            hint="Select user"
+        /> 
+  
+    </fieldset>
+    <fields name="params">  <!-- This becomes JSON automatically -->
+        <fieldset name="params" label="Options">
+            <field name="total_places" 
+                   first="0" last="200" step="1" type="integer" 
+                   useglobal="true" 
+                   label="Total number of places" 
+                   description="Total number of places or zero if unlimited places " 
+            />   
+            <field name="payment_required" 
+                   type="list" 
+                   useglobal="true" 
+                   label="Payment Required" 
+                   description="Does booking require a payment? " 
+                  
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="payment_details" 
+                   showon="payment_required:1"
+                   height="250"
+                   filter="safehtml" 
+                   type="editor" 
+                   editor="tiny_mce" 
+                   useglobal="true" 
+                   label="Payment Details" 
+                   description="Description of what payment is required." 
+            />
+            <field 
+                name="booking_contact_id" 
+                type="Bookingcontact" 
+                useglobal="true" 
+                default=""
+                label="Booking Contact" 
+                description="Who is the booking contact for this event " 
+            />
+            <field 
+                name="maxattendees" 
+                first="1" last="10" step="1" type="integer" 
+                useglobal="true" 
+                label="Max User Attendees" 
+                description="Max number of places that can be booked by one person [logged on]" 
+            />
+            />
+            <field name="attendeetype" 
+                   type="list" 
+                   useglobal="true"
+                   label="Who can attend?" 
+                   description="Is event open to the public or just members" 
+            >
+                <option value="memonly">Members Only</option>
+                <option value="public">Non members welcome</option>
+            </field>
+            <field name="waitinglist" 
+                   type="list" 
+                   useglobal="true" 
+                   default=""
+                   label="Notify list" 
+                   description="Allow a Notify list for events" 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>       
+            <field name="userlistvisibletousers" 
+                   type="list" 
+                   useglobal="true" 
+                   default=""
+                   label="Attendee List visible to Users" 
+                   description="Logged in users can see list of other attendees" 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="closingoption" 
+                   type="list"   
+                   useglobal="true"      
+                   label="Closing time option for bookings"
+                   description="No more bookings will be taken after this time">
+                <option value="start">When event starts</option>
+                <option value="6pm">6pm on the day before event</option>
+                <option value="6pmweek">6pm on a week before event</option>
+                <option value="7am">7am on the day</option>
+                <option value="7amweek">7am a week before</option>
+                <option value="custom">Custom</option>
+            </field>
+            <field name="customclosingdate" 
+                   showon="closingoption:custom"
+                   type="calendar" 
+                   showtime="true"
+                   default="NOW" 
+                   label="Set Closing date" 
+                   description="This is when the bookings for events will end" 
+                   format="%d-%m-%Y %H:%M" />
+   
+            <field name="guest" 
+                   type="list" 
+                   useglobal="true" 
+                   default=""
+                   validate="options"
+                   label="Guest bookings are allowed" 
+                   description="Do you wish to allow people who have not logged in, guests, to book walks/events?"
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="telephone_required" 
+                   type="list" 
+                   validate="options"
+                   useglobal="true" 
+                   default=""
+                   showon="guest:1"
+                   label="Guest telephone number required" 
+                   description="Should input of telephone number be required for guest users" 
+            >
+                <option value="0">Optional</option>
+                <option value="1">Mandatory</option>
+            </field>
+            <field name="maxguestattendees" 
+                   first="1" last="10" step="1" 
+                   type="integer" 
+                   useglobal="true" 
+                   showon="guest:1"
+                   label="Max Guest Attendees" 
+                   description="Max number of places that can be booked by a guest user [not logged on]" 
+            />
+            <field name="userlistvisibletoguests" 
+                   type="list" 
+                   useglobal="true" 
+                   validate="options"
+                   showon="guest:1"
+                   label="Attendee List visible to Guests" 
+                   description="Guest users, not logged on, can see list of other attendees" 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="send_booking_list_onclosed" 
+                   type="list" 
+                   useglobal="true"
+                   default=""
+                   validate="options"
+                   label="Send booking list when closed" 
+                   description="An email, containing the booking list, will be automatically sent to the Booking Contacts once the booking has closed." 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="task_comment" 
+                   type="note" 
+                   label="Set up task" 
+                   showon="send_booking_list_onclosed:1"
+                   description="For this option to work a scheduled task must be set up, see Users Guide for details" 
+                   class="alert alert-info" />
+            <field 
+                name="walk_leader_id" 
+                type="Walkleader" 
+                required="false" 
+                showon="send_booking_list_onclosed:1"
+                label="Walk/Event Leader" 
+                description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
+                hint="Select user"
+            /> 
+            <field name="email_format" 
+                   type="text" 
+                   useglobal="true" 
+                   label="Email Title Format" 
+                   description="Optional format for email titles, default is {yy/mm/dd} {action} {title}." 
+                   hint="Email Title Format"
+            />
+            <field name="customsignature" 
+                   type="list" 
+                   filter="raw"
+                   useglobal="true" 
+                   label="Custom email signature" 
+                   description="Have a custom signature on all emails" 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="signature" 
+                   showon="customsignature:1"
+                   height="250"
+                   filter="safehtml" 
+                   type="editor" 
+                                      label="Email Signature" 
+                   description="Signature to use in place of default group name" 
+                   hint="Signature to use in place of default group name"
+            >
+                <editor-options>
+                    <option name="startup_mode">design</option>  <!-- Forces visual mode -->
+                </editor-options>
+            </field>
+           
+        </fieldset>
+    </fields>
+   
+    <fieldset name="comms" label="Communication"> 
+        <field name="creation_date" type="timecreated" label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_CREATION_DATE" description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_CREATION_DATE" hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_CREATION_DATE"/>
+        <field name="version_note" type="text" label="JGLOBAL_FIELD_VERSION_NOTE_LABEL" description="JGLOBAL_FIELD_VERSION_NOTE_DESC" class="inputbox" size="45" labelclass="control-label"/>
+    </fieldset>
+</form>
