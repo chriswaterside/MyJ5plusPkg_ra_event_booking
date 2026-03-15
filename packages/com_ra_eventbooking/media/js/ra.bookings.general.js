@@ -718,14 +718,18 @@ ra.bookings.evb = function (value) {
             disable.addEventListener("click", function (e) {
                 var data = {
                     ewid: e.currentTarget.getAttribute('data-eventid')};
-                ra.bookings.serverAction(self, 'DisableEvent', data, self._BookingDisableResult);
+                var sa = new ra.bookings.queryServer(self, 'DisableEvent');
+                sa.action(data, (self, results) => {
+                    self._BookingDisableResult(results);
+                });
             });
+
         } else {
             table.tableRowItem('');
         }
         table.tableRowEnd();
     };
-    this._BookingDisableResult = function (self, results) {
+    this._BookingDisableResult = function (results) {
         if (results.status !== 200) {
             ra.showMsg('Unable to disable event/booking record');
             return;
