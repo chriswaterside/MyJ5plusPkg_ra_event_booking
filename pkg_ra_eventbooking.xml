@@ -2,7 +2,7 @@
 <extension type="package" version="2.5" method="upgrade">
 	<name>Ramblers Event Booking</name>
 	<author>Chris Vaughan</author>
-	<creationDate>March 2026</creationDate>
+	<creationDate>16 March 2026</creationDate>
 	<copyright>Copyright (C) 2026 by Chris Vaughan</copyright>
 	<license>GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html</license>
 	<packagename>ra_eventbooking</packagename>
