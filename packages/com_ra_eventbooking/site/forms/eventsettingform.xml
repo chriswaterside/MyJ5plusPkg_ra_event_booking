@@ -143,12 +143,10 @@
             
             // Payment
             <field name="payment_required" 
-                   
                    type="useglobalyesno"
                    global_param="payment_required"
                    label="Payment Required" 
                    description="Does booking require a payment? " 
-                  
             >
                 <option value="no">JNO</option>
                 <option value="yes">JYES</option>

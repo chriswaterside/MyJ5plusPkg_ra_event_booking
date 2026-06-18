@@ -523,7 +523,7 @@ class Ra_eventbookingHelper {
         $options->guest = $options->guest === '1';
         $options->maxattendees = intval($options->maxattendees);
         $options->maxguestattendees = intval($options->maxguestattendees);
-        // do no change  $options->payment_required 
+        // do not change  $options->payment_required 
         $options->total_places = intval($options->total_places);
         $options->telephone_required = $options->telephone_required === '1';
         $options->userlistvisibletousers = $options->userlistvisibletousers === '1';
@@ -571,8 +571,8 @@ class evb {
         $event = new eventData();
         $event->process($value->event_data);
         $this->event_data = $event;
-        $this->options = $this->processParams($value->params);
         $this->params = $value->params; // save raw params for send email on closed
+        $this->options = $this->processParams($value->params);
         $this->actualClosingDate = $this->getClosingDate();
     }
 
@@ -587,9 +587,13 @@ class evb {
                 }
             }
         }
+        // payment_required and bookingemailtextrequired need converting to boolean
+        // to pass to js code
+        // never store options.
 
         switch ($options->payment_required) {
             case 'global':
+                $options->payment_required = $globals->payment_required === '1';
                 if ($globals->payment_required === '1') {
                     $options->payment_details = $globals->payment_details;
                 } else {
@@ -597,13 +601,16 @@ class evb {
                 }
                 break;
             case 'no':
+                $options->payment_required = false;
                 $options->payment_details = '';
                 break;
             case 'yes':
+                $options->payment_required = true;
                 break;
         }
         switch ($options->bookingemailtextrequired) {
             case 'global':
+                $options->bookingemailtextrequired = $globals->bookingemailtextrequired === '1';
                 if ($globals->bookingemailtextrequired === '1') {
                     $options->bookingemailtext = $globals->bookingemailtext;
                 } else {
@@ -611,9 +618,11 @@ class evb {
                 }
                 break;
             case 'no':
+                $options->bookingemailtextrequired = false;
                 $options->bookingemailtext = '';
                 break;
             case 'yes':
+                $options->bookingemailtextrequired = true;
                 break;
         }
         return helper::fixParams($options);

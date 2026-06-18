@@ -27,7 +27,7 @@ class UseglobalyesnoField extends ListField {
         $params = ComponentHelper::getParams('com_ra_eventbooking');
         $globalValue = (int) $params->get($this->globalParam, 0);
 
-        $globalLabel = $globalValue === 1 ? Text::_('Use Global Values(Yes)') : Text::_('Use Global Values(No)');
+        $globalLabel = $globalValue === 1 ? Text::_('Use Global Values (Yes)') : Text::_('Use Global Values (No -  Not required)');
 
         $globalOption = new \stdClass();
         $globalOption->value = 'global';        // empty = use global

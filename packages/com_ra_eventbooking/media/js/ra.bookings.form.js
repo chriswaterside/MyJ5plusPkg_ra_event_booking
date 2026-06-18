@@ -390,13 +390,11 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             case BookingStatus.WAITING:
             case BookingStatus.BOOKED:
             case BookingStatus.NONE:
-                if (this.user.canEdit) {
+                if (this.user.canEdit && this.evb.noAttendees() > 0) {
                     var comment = document.createElement('div');
                     comment.style.color = '#8A2716';
                     comment.innerHTML = "You are logged on with Booking Contact access and have additional options.";
                     tag.appendChild(comment);
-                }
-                if (this.user.canEdit && this.evb.noAttendees() > 0) {
                     var email = document.createElement("div");
                     email.innerHTML = "<i>Email booking list/waiting list to me&nbsp;&nbsp;</i>";
                     email.style.color = '#8A2716';
