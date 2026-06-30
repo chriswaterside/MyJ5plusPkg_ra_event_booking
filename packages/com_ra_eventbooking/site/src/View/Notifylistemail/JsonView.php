@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Email all on waiting/notification list that places available
+ * Email all on waiting/notification list that places are available
  *      parameters
  *         POST data
  *             id - id of event

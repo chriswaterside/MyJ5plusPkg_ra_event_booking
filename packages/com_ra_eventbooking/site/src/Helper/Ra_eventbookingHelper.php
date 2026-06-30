@@ -869,12 +869,18 @@ class evb {
         $app = Factory::getApplication();
         $fields['SITENAME'] = $app->get('sitename');   // gets Global Configuration → Site Name
         $fields['SITEURL'] = Uri::base(false);
-        if ($md5Email !== null) {
-            $fields['CANCELURL'] = $fields['SITEURL'] . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . $md5Email;
-            $fields['CANCELBUTTON'] = "<a href='" . $fields['CANCELURL'] . "' style='border-radius: 5px; background-color:  #F08050; color: white;padding: 3px;margin:3px;'>CANCEL Booking</a>";
+        if (helper::$currentURL !== null) {
+            $fields['LOCALPOPUPURL'] = helper::$currentURL . '&walkid=' . $ewid;
+            $fields['VIEWBUTTON'] = "<a href='" . $fields['LOCALPOPUPURL'] . "' style='border-radius:5px;background-color:#9BC8AB;color:white;padding:3px;margin:3px;'>View Event</a>";
+        } else {
+            $fields['LOCALPOPUPURL'] = $fields['SITEURL'];
+            $fields['VIEWBUTTON'] = "<a href='" . $fields['SITEURL'] . "' style='border-radius:5px;background-color:#404141;color:white;padding:3px;margin:3px;'>View Event on Website</a>";
         }
-        $fields['LOCALPOPUPURL'] = helper::$currentURL . '&walkid=' . $ewid;
-        $fields['VIEWBUTTON'] = "<a href='" . $fields['LOCALPOPUPURL'] . "' style='border-radius: 5px; background-color:  #9BC8AB; color: white;padding: 3px 3px;margin:3px;'>View Event</a>";
+        if ($md5Email !== null) {
+            $url = helper::$currentURL !== null ? helper::$currentURL : '';
+            $fields['CANCELURL'] = $fields['SITEURL'] . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . $md5Email . '&curl=' . base64_encode($url);
+            $fields['CANCELBUTTON'] = "<a href='" . $fields['CANCELURL'] . "' style='border-radius:5px;background-color:#F08050;color:white;padding:3px;margin:3px;'>CANCEL Booking</a>";
+        }
         $fields['FOOTER'] = " <p><small>This email is an automated one sent from the web site:" . $fields['SITENAME'] . " on behalf of " . $fields['GROUPNAME'] . ".  You are being sent this email as you have either booked places or you are on the waiting list for one of our events.</small></p>";
         return $fields;
     }
