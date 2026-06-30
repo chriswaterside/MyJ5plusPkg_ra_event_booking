@@ -100,6 +100,7 @@ ra.bookings.queryServer = function (self, action) {
             return;
     }
     console.log(this.url);
+    // url is used to create the View Button in emails
     this.url = ra.baseDirectory() + this.url;
 
     this.action = function (dataObj, fcn) {

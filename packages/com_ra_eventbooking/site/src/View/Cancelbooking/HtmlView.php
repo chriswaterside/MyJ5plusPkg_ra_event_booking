@@ -44,11 +44,14 @@ class HtmlView extends BaseHtmlView {
         $input = $app->input;
         $ewid = $input->getString('id', 0);
         $md5Email = $input->getString('cancel', 0);
+        $viewUrl = base64_decode($input->getBase64('curl', null));
         $ebRecord = helper::getEVBrecord($ewid, "Internal");
         if ($ebRecord === null) {
             echo '<h3>Sorry we could not find this event</h3>';
             return;
         }
+        // set the view rul so it can be inserted in emails
+        helper::$currentURL = $viewUrl;
         $placesBefore = $ebRecord->noOfPlaces();
 
         $currentBooking = $ebRecord->blc->getItemByMd5Email($md5Email);
