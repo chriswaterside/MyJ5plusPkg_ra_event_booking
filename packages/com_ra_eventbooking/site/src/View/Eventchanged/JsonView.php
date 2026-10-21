@@ -31,24 +31,48 @@ class JsonView extends BaseJsonView {
             $feedback = [];
             $data = helper::getPostedData();
             $ewid = $data->ewid;
-            $attach = new \stdClass();
-            $attach->data = $data->ics;
-            $attach->type = 'string';
-            $attach->encoding = 'base64';
-            $attach->filename = 'walk.ics';
-            $attach->mimeType = 'text/calendar';
+            $ew = $data->ew;
 
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
-            $ew = $data->ew;
+            // nothing to do (silently) if the event is not found or the data is not valid
+            if ($ebRecord === null || !isset($ew->admin->id, $ew->admin->dateUpdated, $ew->basics->walkDate) || (string) $ew->admin->id !== (string) $ewid) {
+                echo new JsonResponse((object) ['feedback' => $feedback]);
+                return;
+            }
+
+            $oldDate = $ebRecord->event_data->getDate();
+            $oldUpdated = $ebRecord->event_data->getDateUpdated();
+            // only act on a genuinely newer version of the walk, this also stops
+            // repeat requests (or several people viewing the walk) sending repeat emails
+            if ($oldUpdated !== null && $oldUpdated !== '' && strtotime((string) $ew->admin->dateUpdated) <= strtotime((string) $oldUpdated)) {
+                echo new JsonResponse((object) ['feedback' => $feedback]);
+                return;
+            }
+
             $ebRecord->createEventData($ew);
             $ebRecord->updateDatabase('Event');
+            $newDate = $ebRecord->event_data->getDate();
 
+            // do we email the people who have booked?
+            $mode = $ebRecord->options->notify_event_changed;
+            $send = false;
+            if ($mode === 'always') {
+                $send = true;
+            } else if ($mode === 'date') {
+                $send = ($oldDate !== '' && $oldDate !== $newDate);
+            }
             $to = $ebRecord->blc->getArray();
-            $replyTo = $ebRecord->getEventContact();
-
-            $mailtemplate = 'event_changed';
-            $fields = $ebRecord->getAllEmailFields();
-            helper::sendEmailsToUser($to, null, $replyTo, $mailtemplate, $fields, $attach);
+            if ($send && count($to) > 0) {
+                $attach = new \stdClass();
+                $attach->data = $data->ics ?? '';
+                $attach->type = 'string';
+                $attach->encoding = 'base64';
+                $attach->filename = 'walk.ics';
+                $attach->mimeType = 'text/calendar';
+                $replyTo = $ebRecord->getEventContact();
+                $fields = $ebRecord->getAllEmailFields();
+                helper::sendEmailsToUser($to, null, $replyTo, 'event_changed', $fields, $attach);
+            }
             $record = (object) [
                         'feedback' => $feedback];
             echo new JsonResponse($record);

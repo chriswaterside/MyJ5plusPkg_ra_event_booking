@@ -8,7 +8,7 @@
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
     <authorUrl>www.ramblers-webs.org.uk</authorUrl>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <description><![CDATA[Event Booking: task to email booking list once booking closed]]></description>
     <namespace path="src">Ramblers\Plugin\Task\EventBooking</namespace>
     <files>

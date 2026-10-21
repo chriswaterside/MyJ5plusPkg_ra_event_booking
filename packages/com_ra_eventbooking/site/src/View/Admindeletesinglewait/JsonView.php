@@ -40,6 +40,7 @@ class JsonView extends BaseJsonView {
             $ewid = $data->ewid;
 
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $ebRecord->removeWaiting($md5Email);
             $ebRecord->updateDatabase('Waiting');
             $feedback[] = '<h3>The notification list entry for this event has been removed</h3>';

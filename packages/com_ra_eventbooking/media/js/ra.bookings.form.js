@@ -67,11 +67,26 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         this.displayEvent(this.elements.eventDetails);
         var self = this;
         this.tag.addEventListener('userDetailsVerified', (e) => {
-            self.elements.lists.innerHTML = '';
-            self.elements.bookplace.innerHTML = '';
-            self.bookingForm(self.elements.bookplace);
-            self.emailBookingContact(self.elements.lists);
-            self.bookingLists(self.elements.lists);
+            const showForm = () => {
+                self.elements.lists.innerHTML = '';
+                self.elements.bookplace.innerHTML = '';
+                self.bookingForm(self.elements.bookplace);
+                self.emailBookingContact(self.elements.lists);
+                self.bookingLists(self.elements.lists);
+            };
+            if (self.user.id > 0) {
+                showForm();
+                return;
+            }
+            // guest: ask the server again, giving the md5 of the verified email, so that
+            // the amount paid on their own booking is returned
+            var sa = new ra.bookings.queryServer(self, 'getSingleEvent');
+            sa.action({ewid: self.ewid, md5Email: self.bookingData.md5Email}, (s, results) => {
+                if (results.data && results.data.evb) {
+                    s.evb = new ra.bookings.evb(results.data.evb);
+                }
+                showForm();
+            });
         });
         this.tag.addEventListener('userDetailsChanged', (e) => {
             self.elements.lists.innerHTML = '';
@@ -144,11 +159,16 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
 
         this._name = this.input.addText(tag, 'name', "Your name:", this.bookingData, 'name', 'Who is making this booking', null);
         this._email = this.input.addEmail(tag, 'email', "Email Address:", this.bookingData, 'email', 'Contact\'s email address', null);
-        this._telephone = this.input.addText(tag, 'telephone', "Telephone number:", this.bookingData, 'telephone', 'Contact\'s telephone/mobile number', null);
-        if (this.evb.options.telephone_required) {
-            ra.bookings.addTextTag(tag, 'p', '<small>Telephone number must be in one of the following formats 0xxx xxx xxxx,  0xxxx xxxxxx or  0xxxx xxxxxx</small>');
-        } else {
-            ra.bookings.addTextTag(tag, 'p', 'Optional <small>telephone number must be in one of the following formats 0xxx xxx xxxx,  0xxxx xxxxxx or  0xxxx xxxxxx</small>');
+        this._telephone = null;
+        if (this.evb.options.telephone_ask) {
+            var telLabel = this.evb.options.telephone_required ? "Telephone number:" : "Telephone number (optional):";
+            this._telephone = this.input.addText(tag, 'telephone', telLabel, this.bookingData, 'telephone', 'Contact\'s telephone/mobile number', null);
+            if (this.evb.options.telephone_required) {
+                ra.bookings.addTextTag(tag, 'p', '<small>Telephone number must be in one of the following formats 0xxx xxx xxxx,  0xxxx xxxxxx or  0xxxx xxxxxx</small>');
+            } else {
+                ra.bookings.addTextTag(tag, 'p', '<small>You do not have to give a telephone number. If you do, it must be in one of the following formats 0xxx xxx xxxx,  0xxxx xxxxxx or  0xxxx xxxxxx</small>');
+            }
+            ra.bookings.addTextTag(tag, 'p', '<small>Your telephone number will only be seen by the booking contact for this event.</small>');
         }
 
         this._member = this.input.addSelect(tag, 'member', 'Are you a Ramblers member', memOptions, this.bookingData, 'member');
@@ -160,16 +180,20 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         this._email.addEventListener("input", function () {
             self.checkUserDetails();
         });
-        this._telephone.addEventListener("input", function () {
-            self.checkUserDetails();
-        });
+        if (this._telephone !== null) {
+            this._telephone.addEventListener("input", function () {
+                self.checkUserDetails();
+            });
+        }
 
     };
     this.checkUserDetails = function () {
         var $okay = true;
         this._name.style.color = 'black';
         this._email.style.color = 'black';
-        this._telephone.style.color = 'black';
+        if (this._telephone !== null) {
+            this._telephone.style.color = 'black';
+        }
 
         var name = this._name.value.trim();
         var email = this._email.value.trim();
@@ -193,7 +217,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
 
         // Landlines: 0xxx xxx xxxx  OR  0xxxx xxxxxx
         // Mobiles:   07xxx xxxxxx
-        if (this.evb.options.telephone_required) {
+        if (this._telephone !== null && this.evb.options.telephone_required) {
             const re = /^(0\d{3}\s?\d{3}\s?\d{4}|0\d{4}\s?\d{6}|07\d{3}\s?\d{6})$/;
             if (!re.test(this.bookingData.telephone)) {
                 this._telephone.style.color = 'red';
@@ -374,7 +398,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             case BookingStatus.WAITING:
             case BookingStatus.BOOKED:
             case BookingStatus.NONE:
-                if (this.user.canEdit && this.evb.noAttendees() > 0) {
+                if (this.user.canManage && this.evb.noAttendees() > 0) {
                     var comment = document.createElement('div');
                     comment.style.color = '#8A2716';
                     comment.innerHTML = "<b>You are logged on with Booking Contact access and have additional options.</b>";

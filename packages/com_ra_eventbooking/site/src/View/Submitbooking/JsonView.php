@@ -77,7 +77,7 @@ class JsonView extends BaseJsonView {
             $id = $bookingData->id;
             $name = $bookingData->name;
             $email = $bookingData->email;
-            $telephone = $bookingData->telephone;
+            $telephone = $ebRecord->options->telephone_ask ? ($bookingData->telephone ?? '') : '';
             $member = $bookingData->member;
             $attendees = $bookingData->attendees;
             $paid = $bookingData->paid;

@@ -31,6 +31,7 @@ class JsonView extends BaseJsonView {
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
 
             $to = $ebRecord->wlc->getArray();
             $replyTo = $ebRecord->getEventContact();

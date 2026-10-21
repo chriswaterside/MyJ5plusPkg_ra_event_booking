@@ -36,6 +36,7 @@ class JsonView extends BaseJsonView {
             $ewid = $data->ewid;
             $paid = $data->paid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $item = $ebRecord->blc->getItemByMd5Email($md5Email);
             if ($item === null) {
                 throw new \RuntimeException('Unable to find the booking for this person');

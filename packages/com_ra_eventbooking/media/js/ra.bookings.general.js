@@ -466,8 +466,15 @@ ra.bookings.inputFields = function () {
 
 //////////////////////////////////////////////////////////////////////
 
+ra.bookings.telephoneText = function (ask, required) {
+    if (!ask) {
+        return "Telephone number is not requested";
+    }
+    return required ? "Telephone number is mandatory" : "Telephone number is optional";
+};
 ra.bookings.user = function (user) {
     this.canEdit = user.canEdit;
+    this.canManage = user.canManage === true; // booking contact/leader of this event
     this.md5Email = user.email;
     this.id = user.id;
     this.name = user.name;
@@ -484,6 +491,7 @@ ra.bookings.defaults = function (defaults) {
     this.payment_required = defaults.payment_required;
     this.payment_details = defaults.payment_details;
     this.telephone_required = defaults.telephone_required;
+    this.telephone_ask = defaults.telephone_ask;
     this.total_places = defaults.total_places;
     this.userlistvisibletoguests = defaults.userlistvisibletoguests;
     this.userlistvisibletousers = defaults.userlistvisibletousers;
@@ -543,11 +551,7 @@ ra.bookings.defaults = function (defaults) {
         } else {
             this.addLi(elements.guestlist, "Guest users <b>cannot</b> see who has booked places");
         }
-        if (this.telephone_required) {
-            this.addLi(elements.guestlist, "Telephone number is mandatory");
-        } else {
-            this.addLi(elements.guestlist, "Telephone number is optional");
-        }
+        this.addLi(elements.guestlist, ra.bookings.telephoneText(this.telephone_ask, this.telephone_required));
         this.addLi(elements.closing, this.getClosingDescription(this.closingoption));
 
         if (this.waitinglist) {
@@ -625,8 +629,8 @@ ra.bookings.defaults = function (defaults) {
         if (this.userlistvisibletoguests !== options.userlistvisibletoguests) {
             out[out.length] = options.userlistvisibletoguests ? "Guests can view who has booked" : "Guests CANNOT view who has booked";
         }
-        if (this.telephone_required !== options.telephone_required) {
-            out[out.length] = options.telephone_required ? "Telephone number is mandatory" : "Telephone number is optional";
+        if (this.telephone_required !== options.telephone_required || this.telephone_ask !== options.telephone_ask) {
+            out[out.length] = ra.bookings.telephoneText(options.telephone_ask, options.telephone_required);
         }
 
         if (this.waitinglist !== options.waitinglist) {
@@ -781,8 +785,9 @@ ra.bookings.evb = function (value) {
         if (this.canDisplayBookingList(user)) {
             var options = {
                 guest: this.options.guest,
-                canEdit: user.canEdit,
-                displayPaid: this.options.payment_required && user.canEdit};
+                canEdit: user.canManage,
+                showTelephone: this.options.telephone_ask,
+                displayPaid: this.options.payment_required && user.canManage};
             this.blc.list(tag, options);
         }
     };
@@ -790,7 +795,7 @@ ra.bookings.evb = function (value) {
         if (this.canDisplayWaitingList) {
             var options = {
                 guest: this.options.guest,
-                canEdit: user.canEdit};
+                canEdit: user.canManage};
             this.wlc.list(tag, options);
         }
 
@@ -928,7 +933,7 @@ ra.bookings.evb = function (value) {
         if (this.blc.noAttendees() === 0) {
             return false;
         }
-        if (user.canEdit) {
+        if (user.canManage) {
             return true;
         }
         if (user.id > 0) { // user logged in.
@@ -1002,6 +1007,9 @@ ra.bookings.blc = function () {
         } else {
             if (!options.displayPaid) {
                 format[5].ignore = true;
+            }
+            if (!options.showTelephone) {
+                format[4].ignore = true; // telephone numbers not requested for this event
             }
         }
         format[1].ignore = !options.guest;

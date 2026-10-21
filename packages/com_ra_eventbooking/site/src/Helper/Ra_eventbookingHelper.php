@@ -178,7 +178,9 @@ class Ra_eventbookingHelper {
         $query->select($db->quoteName($names));
         $query->from($db->quoteName('#__ra_event_bookings'));
         $query->where($db->quoteName('state') . ' = 1 ');
-        $query->where($db->quoteName('event_id') . ' = ' . $ewid . ' ');
+        $ewid = (string) $ewid;
+        $query->where($db->quoteName('event_id') . ' = :ewid');
+        $query->bind(':ewid', $ewid, \Joomla\Database\ParameterType::STRING);
 
         $db->setQuery($query);
         $result = $db->loadObject();
@@ -277,15 +279,52 @@ class Ra_eventbookingHelper {
                 }));
     }
 
-    public static function resetEmailOnClosed($event) {
-        $jsonparams = $event->params;
-        $params = \json_decode($jsonparams);
+    /**
+     * Record that the final booking list has been sent. The user's
+     * send_booking_list_onclosed setting is left untouched.
+     */
+    public static function markFinalListSent($event) {
+        $params = \json_decode($event->params);
         if ($params === null) {
             $params = new \stdClass();
         }
-        $params->send_booking_list_onclosed = '0';
+        $params->final_list_sent = (new \DateTime('now', new \DateTimeZone('Europe/London')))->format('Y-m-d H:i:s');
         $event->params = json_encode($params);
         $event->updateDatabase('Params');
+    }
+
+    /**
+     * Is the scheduled task that emails the final booking list enabled?
+     */
+    public static function isClosingTaskEnabled(): bool {
+        try {
+            $db = Factory::getContainer()->get(DatabaseInterface::class);
+            $query = $db->createQuery();
+            $type = 'email.bookinglist';
+            $query->select('COUNT(*)')
+                    ->from($db->quoteName('#__scheduler_tasks'))
+                    ->where($db->quoteName('type') . ' = :type')
+                    ->where($db->quoteName('state') . ' = 1')
+                    ->bind(':type', $type);
+            $db->setQuery($query);
+            return (int) $db->loadResult() > 0;
+        } catch (\Throwable $e) {
+            return true; // cannot tell, do not show a false warning
+        }
+    }
+
+    /**
+     * Stop the request unless the current user is allowed to manage this
+     * event's bookings (event booking contact, group contact, walk leader
+     * or super user). Thrown exceptions are reported to the browser by Joomla.
+     */
+    public static function requireManager($evb) {
+        if ($evb === null) {
+            throw new \RuntimeException('Event not found', 404);
+        }
+        if (!$evb->userCanManage()) {
+            throw new \RuntimeException('You are not authorised to do this', 403);
+        }
     }
 
     public static function getGroupContact() {
@@ -545,12 +584,16 @@ class Ra_eventbookingHelper {
         $globals->maxattendees = (int) ($globals->maxattendees ?? 1);
         $globals->maxguestattendees = (int) ($globals->maxguestattendees ?? 1);
         $globals->total_places = (int) ($globals->total_places ?? 1);
-        $globals->telephone_required = (boolean) ($globals->telephone_required ?? true);
+        // telephone_required: 0 = optional, 1 = mandatory, 2 = not requested
+        $telMode = (string) ($globals->telephone_required ?? '1');
+        $telMode = ($telMode === '') ? '1' : $telMode;
+        $globals->telephone_ask = ($telMode !== '2');
+        $globals->telephone_required = ($telMode === '1');
         $globals->userlistvisibletousers = (boolean) ($globals->userlistvisibletousers ?? false);
         $globals->userlistvisibletoguests = (boolean) ($globals->userlistvisibletoguests ?? false);
         $globals->waitinglist = (boolean) ($globals->waitinglist ?? false);
         $globals->email_waiting = (boolean) ($globals->email_waiting ?? false);
-        $globals->send_both_contacts = (boolean) ($globals->send_both_contacts ?? false);
+        $globals->copy_group_contact = (boolean) ($globals->copy_group_contact ?? false);
         $globals->send_booking_list_onclosed = (boolean) ($globals->send_booking_list_onclosed ?? false);
         $globals->walk_leader_id = (int) ($globals->walk_leader_id ?? 0);
 // the following two fields have the values of global, yes or no
@@ -840,14 +883,24 @@ class evb {
         $options->maxattendees = (int) ($options->maxattendees ?? 1);
         $options->maxguestattendees = (int) ($options->maxguestattendees ?? 1);
         $options->total_places = (int) ($options->total_places ?? 1);
-        $options->telephone_required = (boolean) ($options->telephone_required ?? true);
+        // telephone_required: 0 = optional, 1 = mandatory, 2 = not requested
+        $telMode = (string) ($options->telephone_required ?? '1');
+        $telMode = ($telMode === '') ? '1' : $telMode;
+        $options->telephone_ask = ($telMode !== '2');
+        $options->telephone_required = ($telMode === '1');
         $options->userlistvisibletousers = (boolean) ($options->userlistvisibletousers ?? false);
         $options->userlistvisibletoguests = (boolean) ($options->userlistvisibletoguests ?? false);
         $options->waitinglist = (boolean) ($options->waitinglist ?? false);
         $options->email_waiting = (boolean) ($options->email_waiting ?? false);
-        $options->send_both_contacts = (boolean) ($options->send_both_contacts ?? false);
+        $options->copy_group_contact = (boolean) ($options->copy_group_contact ?? false);
         $options->send_booking_list_onclosed = (boolean) ($options->send_booking_list_onclosed ?? false);
         $options->walk_leader_id = (int) ($options->walk_leader_id ?? 0);
+        // when to email bookers about walk changes: none, date or always
+        $notify = (string) ($options->notify_event_changed ?? '');
+        if ($notify === '') {
+            $notify = (string) ($globals->notify_event_changed ?? '');
+        }
+        $options->notify_event_changed = in_array($notify, ['none', 'date', 'always'], true) ? $notify : 'date';
         return $options;
     }
 
@@ -890,10 +943,7 @@ class evb {
 
     public function displayBookingTable() {
         $juser = Factory::getApplication()->getIdentity();
-        $canEdit = false;
-        if ($juser->id > 0) {
-            $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
-        }
+        $canEdit = $this->userCanManage(); // personal details only for this event's contacts
         $userlistvisibletousers = $this->options->userlistvisibletousers;
         $userlistvisibletoguests = $this->options->userlistvisibletoguests;
         $canView = false;
@@ -918,10 +968,7 @@ class evb {
 
     public function displayWaitingTable() {
         $juser = Factory::getApplication()->getIdentity();
-        $canEdit = false;
-        if ($juser->id > 0) {
-            $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
-        }
+        $canEdit = $this->userCanManage(); // personal details only for this event's contacts
         $userlistvisibletousers = $this->options->userlistvisibletousers;
         $userlistvisibletoguests = $this->options->userlistvisibletoguests;
         $canView = false;
@@ -957,11 +1004,16 @@ class evb {
         throw new \RuntimeException('Group Booking Contact not set - contact group');
     }
 
-    public function getEventContacts($includeWalkLeader = false) {
+    /**
+     * Contacts to be sent a copy of emails
+     * @param bool $includeWalkLeader always include the walk leader
+     * @param bool $isFinalList the final booking list always goes to the group contact
+     */
+    public function getEventContacts($includeWalkLeader = false, $isFinalList = false) {
         $emails = [];
         $ec = $this->getEventContact();
         $emails[] = helper::getSendTo($ec->name, $ec->email);
-        if ($this->options->send_both_contacts) {
+        if ($isFinalList or $this->options->copy_group_contact) {
             $gc = helper::getGroupContact();
             $emails[] = helper::getSendTo($gc->name, $gc->email);
         }
@@ -972,6 +1024,60 @@ class evb {
             }
         }
         return helper::uniqueByProperty($emails, 'email');
+    }
+
+    /**
+     * Can the current user manage this event's bookings and see the personal
+     * details (telephone numbers etc.) of those booked?
+     * Booking contact, group contact or walk leader (who also have edit
+     * access to the component), and super users.
+     */
+    public function userCanManage(): bool {
+        $user = Factory::getApplication()->getIdentity();
+        if ($user === null || (int) $user->id < 1) {
+            return false;
+        }
+        if ($user->authorise('core.admin')) {
+            return true;
+        }
+        if (!$user->authorise('core.edit', 'com_ra_eventbooking')) {
+            return false;
+        }
+        $id = (int) $user->id;
+        if ((int) ($this->options->booking_contact_id ?? 0) === $id) {
+            return true;
+        }
+        if ((int) ($this->options->walk_leader_id ?? 0) === $id) {
+            return true;
+        }
+        try {
+            if ((int) (helper::getRawGlobals()->booking_contact_id ?? 0) === $id) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // global contact not set
+        }
+        return false;
+    }
+
+    /**
+     * Hide personal details from a viewer who is not allowed to see them.
+     * The viewer's own entries (matched by md5 of email) are left intact.
+     */
+    public function maskForViewer($ownMd5Email, bool $hideNames) {
+        $this->blc->maskForViewer($ownMd5Email, $hideNames);
+        $this->wlc->maskForViewer($ownMd5Email, $hideNames);
+    }
+
+    /**
+     * A guest has told us (via the md5 of the email they typed) which booking is theirs.
+     * Reveal only the amount paid for that booking - never phone number or email.
+     */
+    public function revealPaidFor($md5Email) {
+        if (!is_string($md5Email) || !preg_match('/^[0-9a-f]{32}$/', $md5Email)) {
+            return;
+        }
+        $this->blc->revealPaidFor($md5Email);
     }
 
     public function getWalkLeader() {
@@ -1004,8 +1110,10 @@ class evb {
         if ($this->actualClosingDate === null) {
             return false;
         }
-        $closing = new \DateTime($this->actualClosingDate);
-        $now = new \DateTime();
+        // closing date is held in local (UK) time, so compare in local time
+        $tz = new \DateTimeZone('Europe/London');
+        $closing = new \DateTime($this->actualClosingDate, $tz);
+        $now = new \DateTime('now', $tz);
         return $closing < $now;
     }
 
@@ -1032,7 +1140,7 @@ class evb {
         if ($this->event_data->getDate() === '') {// no event data
             return null;
         }
-        $startDate = new \DateTime($this->event_data->getDate());
+        $startDate = new \DateTime($this->event_data->getDate(), new \DateTimeZone('Europe/London'));
         $cldate = (clone $startDate);
         switch ($which) {
             case 'start':
@@ -1065,8 +1173,8 @@ class evb {
             $placesAvailable = 'Unlimited';
             $placesTaken = $this->blc->noAttendees();
         } else {
-            $placesAvailable = $totalPlacesAvailable - $placesTaken;
             $placesTaken = $this->blc->noAttendees();
+            $placesAvailable = $totalPlacesAvailable - $placesTaken;
         }
         $fields['PLACESTAKEN'] = $placesTaken;
         $noOfPlaces = $this->noOfPlacesText();
@@ -1109,7 +1217,7 @@ class evb {
 
     public function sendEmailBookingOnClosed() {
 // sent to booking contacts     
-        $to = $this->getEventContacts(true);
+        $to = $this->getEventContacts(true, true);
         $replyTo = null;
         $bookinglist = $this->blc->getBookingTable($this->options->payment_required, true);
         $waitinglist = $this->getWaitingTable(true);
@@ -1258,6 +1366,23 @@ class blc implements \JsonSerializable {
         return $to;
     }
 
+    public function maskForViewer($ownMd5Email, bool $hideNames) {
+        foreach ($this->items as $item) {
+            if ($ownMd5Email !== null && $item->getMd5Email() === $ownMd5Email) {
+                continue;
+            }
+            $item->mask($hideNames);
+        }
+    }
+
+    public function revealPaidFor($md5Email) {
+        foreach ($this->items as $item) {
+            if ($item->getMd5Email() === $md5Email) {
+                $item->revealPaid();
+            }
+        }
+    }
+
     public function getBookingTable($payment_required, $canEdit) {
         if (count($this->items) === 0) {
             return "<h3>No bookings at the moment</h3>";
@@ -1307,6 +1432,20 @@ class bli implements \JsonSerializable {
     private $paid;
     private $member;
     private $mode; // 'Summary', 'Single' or 'Internal'
+    private $masked = false;
+    private $maskName = false;
+    private $paidRevealed = false;
+
+    /** Hide personal details when this item is sent to the browser (Single mode) */
+    public function mask(bool $hideName) {
+        $this->masked = true;
+        $this->maskName = $hideName;
+    }
+
+    /** Show the amount paid even though the item is masked (the booker's own entry) */
+    public function revealPaid() {
+        $this->paidRevealed = true;
+    }
 
     public function __construct($id, $name, $email, $telephone, $member, $attendees, $paid, $mode) {
         $this->id = $id;
@@ -1372,6 +1511,17 @@ class bli implements \JsonSerializable {
                     "noAttendees" => $this->noAttendees,
                 ];
             case "Single":
+                if ($this->masked) {
+                    return [
+                        "id" => $this->id,
+                        "name" => $this->maskName ? '' : $this->name,
+                        "md5Email" => md5($this->email), // kept: the browser matches a typed email to an existing booking
+                        "telephone" => '',
+                        "noAttendees" => $this->noAttendees,
+                        "member" => '',
+                        "paid" => $this->paidRevealed ? $this->paid : '',
+                    ];
+                }
                 return [
                     "id" => $this->id,
                     "name" => $this->name,
@@ -1407,6 +1557,15 @@ class wlc implements \JsonSerializable {
 
     public function getItems() {
         return $this->items;
+    }
+
+    public function maskForViewer($ownMd5Email, bool $hideNames) {
+        foreach ($this->items as $item) {
+            if ($ownMd5Email !== null && $item->getMd5Email() === $ownMd5Email) {
+                continue;
+            }
+            $item->mask($hideNames);
+        }
     }
 
     public function process($jsonValue, $mode) {
@@ -1501,6 +1660,14 @@ class wli implements \JsonSerializable {
     public readonly string $name;
     public readonly string $email;
     private $mode;
+    private $masked = false;
+    private $maskName = false;
+
+    /** Hide personal details when this item is sent to the browser */
+    public function mask(bool $hideName) {
+        $this->masked = true;
+        $this->maskName = $hideName;
+    }
 
     public function __construct($id, $name, $email, $mode) {
 
@@ -1542,6 +1709,13 @@ class wli implements \JsonSerializable {
         switch ($this->mode) {
             case "Summary":
             case "Single":
+                if ($this->masked) {
+                    return [
+                        "id" => $this->id,
+                        "name" => $this->maskName ? '' : $this->name,
+                        "md5Email" => md5($this->email), // kept: the browser matches a typed email to an existing booking
+                    ];
+                }
                 return [
                     "id" => $this->id,
                     "name" => $this->name,
@@ -1617,11 +1791,13 @@ class eventData implements \JsonSerializable {
         }
         $date = new \DateTime($this->date);
         $walkDate = $date->format("D, jS M Y");
-        $out = '<table>';
-        $out .= '<tr><td>Event type</td><td>' . $this->eventType . '</td></tr>';
-        $out .= '<tr><td>Date</th><td>' . $walkDate . '</td></tr>';
-        $out .= '<tr><td>Title</th><td>' . $this->title . '</td></tr>';
-        $out .= '<tr><td>Description</td><td>' . $this->descriptionHtml . '</td></tr>';
+        $th = '<th scope="row" style="vertical-align:top;text-align:left;padding:4px 12px 4px 0;white-space:nowrap;background:transparent;box-shadow:none;">';
+        $td = '<td style="vertical-align:top;padding:4px 0;background:transparent;box-shadow:none;">';
+        $out = '<table style="background:transparent;--bs-table-bg:transparent;--bs-table-accent-bg:transparent;">';
+        $out .= '<tr style="background:transparent;">' . $th . 'Event type</th>' . $td . $this->eventType . '</td></tr>';
+        $out .= '<tr>' . $th . 'Date</th>' . $td . $walkDate . '</td></tr>';
+        $out .= '<tr>' . $th . 'Title</th>' . $td . $this->title . '</td></tr>';
+        $out .= '<tr>' . $th . 'Description</th>' . $td . $this->descriptionHtml . '</td></tr>';
         $out .= '</table>';
         return $out;
     }

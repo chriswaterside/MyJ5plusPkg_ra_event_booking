@@ -93,19 +93,24 @@ final class EmailBookingList extends CMSPlugin implements SubscriberInterface {
 
         $events = helper::getAllEVBRecords();
         foreach ($events as $event) {
-            if ($this->debug) {
-                $this->logTask('Debug: event ' . $event->event_id);
-            }
-            if ($event->options->send_booking_list_onclosed) {
-                $this->logTask('  Debug: send booking list on closed is on ' . $event->event_id);
-                if ($event->isBookingClosed()) {
-                    $this->logTask('   Debug: event booking closed: ' . $event->event_id);
-                    $event->sendEmailBookingOnClosed();
-                    $this->logTask('     Debug: email sent: ' . $event->event_id);
-                    helper::resetEmailOnClosed($event);
-
-                    $this->logTask('Email sent for event ' . $event->event_id);
+            // one failing event must not stop the others being processed
+            try {
+                if ($this->debug) {
+                    $this->logTask('Debug: event ' . $event->event_id);
                 }
+                if (!$event->options->send_booking_list_onclosed) {
+                    continue;
+                }
+                if (!empty($event->options->final_list_sent)) {
+                    continue; // already sent
+                }
+                if ($event->isBookingClosed()) {
+                    $event->sendEmailBookingOnClosed();
+                    helper::markFinalListSent($event);
+                    $this->logTask('Final booking list sent for event ' . $event->event_id);
+                }
+            } catch (\Throwable $e) {
+                $this->logTask('Email booking list FAILED for event ' . $event->event_id . ': ' . $e->getMessage());
             }
         }
         return;

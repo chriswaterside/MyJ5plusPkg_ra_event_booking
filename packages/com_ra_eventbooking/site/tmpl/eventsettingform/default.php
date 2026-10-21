@@ -83,18 +83,30 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
                 echo $this->form->renderField('payment_details', 'params');
                 echo HTMLHelper::_('uitab.endTab');
                 echo HTMLHelper::_('uitab.addTab', 'myTab', 'comms', Text::_('Comms'));
+                echo '<fieldset class="options-form mb-4" style="border:1px solid #ccc;border-radius:6px;padding:12px 16px 4px 16px;margin-bottom:20px;"><legend style="float:none;width:auto;font-size:1.15rem;font-weight:600;padding:0 8px;">Booking contact</legend><p class="text-muted">Who is the contact for this event.</p>';
                 echo $this->form->renderField('booking_contact_id', 'params');
+                echo '</fieldset>';
+                echo '<fieldset class="options-form mb-4" style="border:1px solid #ccc;border-radius:6px;padding:12px 16px 4px 16px;margin-bottom:20px;"><legend style="float:none;width:auto;font-size:1.15rem;font-weight:600;padding:0 8px;">Copies of booking emails</legend><p class="text-muted">Copies of the emails sent when someone books, cancels or joins the waiting list.</p>';
                 echo $this->form->renderField('email_booking', 'params');
                 echo $this->form->renderField('notrecommended', 'params');
                 echo $this->form->renderField('email_waiting', 'params');
-                echo $this->form->renderField('send_both_contacts', 'params');
+                echo $this->form->renderField('copy_group_contact', 'params');
+                echo '</fieldset>';
+                echo '<fieldset class="options-form mb-4" style="border:1px solid #ccc;border-radius:6px;padding:12px 16px 4px 16px;margin-bottom:20px;"><legend style="float:none;width:auto;font-size:1.15rem;font-weight:600;padding:0 8px;">Closing and final booking list</legend><p class="text-muted">When bookings close, and who is sent the final booking list. It is always sent to the booking contact and the group contact.</p>';
                 echo $this->form->renderField('closingoption', 'params');
                 echo $this->form->renderField('customclosingdate', 'params');
                 echo $this->form->renderField('send_booking_list_onclosed', 'params');
-                echo $this->form->renderField('task_comment', 'params');
+                if (!helper::isClosingTaskEnabled()) {
+                    echo $this->form->renderField('task_comment', 'params');
+                }
                 echo $this->form->renderField('walk_leader_id', 'params');
+                echo $this->form->renderField('final_list_sent', 'params');
+                echo '</fieldset>';
+                echo '<fieldset class="options-form mb-4" style="border:1px solid #ccc;border-radius:6px;padding:12px 16px 4px 16px;margin-bottom:20px;"><legend style="float:none;width:auto;font-size:1.15rem;font-weight:600;padding:0 8px;">Emails to people who have booked</legend><p class="text-muted">Emails sent to the people who have booked places.</p>';
+                echo $this->form->renderField('notify_event_changed', 'params');
                 echo $this->form->renderField('bookingemailtextrequired', 'params');
                 echo $this->form->renderField('bookingemailtext', 'params');
+                echo '</fieldset>';
 
                 echo HTMLHelper::_('uitab.endTab');
 

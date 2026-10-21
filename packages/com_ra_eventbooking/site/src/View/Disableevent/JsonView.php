@@ -29,6 +29,7 @@ class JsonView extends BaseJsonView {
             $feedback = [];
             $data = helper::getPostedData();
             $ewid = $data->ewid;
+            helper::requireManager(helper::getEVBrecord($ewid, "Internal"));
             helper::updateDBField($ewid, 'state', 0, 'int');
             
             $record = (object) [
