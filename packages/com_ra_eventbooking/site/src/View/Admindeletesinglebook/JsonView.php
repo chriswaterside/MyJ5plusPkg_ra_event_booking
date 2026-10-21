@@ -41,6 +41,7 @@ class JsonView extends BaseJsonView {
             $ewid = $data->ewid;
 
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $placesBefore = $ebRecord->noOfPlaces();
 
             $ebRecord->removeBooking($md5Email);

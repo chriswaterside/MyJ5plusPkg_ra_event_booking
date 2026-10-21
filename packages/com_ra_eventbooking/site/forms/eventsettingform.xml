@@ -116,10 +116,11 @@
                    default=""
                    showon="guest:1"
                    label="Guest telephone number required" 
-                   description="Should input of telephone number be required for guest users" 
+                   description="Should guests be asked for a telephone number: optional, mandatory or not asked for at all. Telephone numbers are only seen by the booking contact(s) and walk leader." 
             >
                 <option value="0">Optional</option>
                 <option value="1">Mandatory</option>
+                <option value="2">Not requested (field not shown)</option>
             </field>
             <field name="maxguestattendees" 
                    first="1" last="10" step="1" 
@@ -198,17 +199,29 @@
                 <option value="0">Booking changes</option>
                 <option value="1">Booking and waiting list changes</option>
             </field>
-            <field name="send_both_contacts" 
+            <field name="copy_group_contact" 
                    type="list" 
-                   default="1"
+                   useglobal="true"
+                   default=""
                    showon="email_booking:individual,list"
-                   label="Send to both booking contacts" 
-                   description="Send notifications to both booking contacts, when different" 
+                   label="Also copy the group contact" 
+                   description="Should the group contact (set in the component Options) also be sent a copy of booking, cancellation and waiting list emails, as well as the event contact? The final booking list is always sent to the group contact." 
             >
-                <option value="0">Just to Event contact</option>
-                <option value="1">To Event contact and group contact, if different</option>
+                <option value="0">Never</option>
+                <option value="1">Yes</option>
             </field>
        
+            <field name="notify_event_changed" 
+                   type="list" 
+                   useglobal="true" 
+                   default=""
+                   label="Email bookers when walk is amended" 
+                   description="Should people who have booked be emailed automatically when the walk is amended in Walks Manager? Contacts can always email bookers themselves from the booking list." 
+            >
+                <option value="none">Never</option>
+                <option value="date">Only if the date or time changes</option>
+                <option value="always">Whenever the walk is updated in Walks Manager</option>
+            </field>
             <field name="closingoption" 
                    type="list"   
                    useglobal="true"      
@@ -243,19 +256,20 @@
             </field>
             <field name="task_comment" 
                    type="note" 
-                   label="Set up task" 
+                   label="Scheduled task not enabled" 
                    showon="send_booking_list_onclosed:1"
-                   description="For this option to work a scheduled task must be set up, see Users Guide for details" 
-                   class="alert alert-info" />
+                   description="Final booking lists will NOT be sent until the Event Booking email task is enabled in System - Scheduled Tasks, see Users Guide for details" 
+                   class="alert alert-danger" />
             <field 
                 name="walk_leader_id" 
                 type="Walkleader" 
                 required="false" 
                 showon="send_booking_list_onclosed:1"
-                label="Walk/Event Leader" 
-                description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
+                label="Walk/Event Leader - final booking list"
+                description="OPTIONAL The Walk/Event Leader will be sent the final booking list once bookings have closed." 
                 hint="Select user"
-            /> 
+            />
+            <field name="final_list_sent" type="hidden" filter="string" default="" /> 
             <field name="bookingemailtextrequired" 
                    type="useglobalyesno"
                    global_param="bookingemailtextrequired"

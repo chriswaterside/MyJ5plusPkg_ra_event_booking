@@ -7,7 +7,7 @@
     <author>Chris Vaughan </author>
     <authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
     <authorUrl>http://ramblers-webs.org.uk</authorUrl>
-    <version>1.0.8</version>
+    <version>1.0.22</version>
     <description>Enable booking of events on a group web site, walks and non walking events</description>
     <namespace path="src">Ramblers\Component\Ra_eventbooking</namespace>
     
@@ -42,10 +42,7 @@
         <language tag="en-GB">en-GB/com_ra_eventbooking.ini</language>
     </languages>
     <administration>
-        <menu>COM_RA_EVENTBOOKING</menu>
-        <submenu>
-            <menu link="option=com_ra_eventbooking&amp;view=eventsettings" view="eventsettings" alt="Ra_eventbooking/Eventsettings">COM_RA_EVENTBOOKING_TITLE_EVENTSETTINGS</menu>
-        </submenu>
+        <menu link="option=com_ra_eventbooking&amp;view=eventsettings" view="eventsettings" alt="Ra_eventbooking/Eventsettings">COM_RA_EVENTBOOKING</menu>
         <files folder="administrator">
             <filename>access.xml</filename>
             <filename>config.xml</filename>

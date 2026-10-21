@@ -30,10 +30,23 @@ class JsonView extends BaseJsonView {
             $feedback = [];
             $data = helper::getPostedData();
             $ewid = $data->ewid;
+            $evb = helper::getEVBrecord($ewid, "Single");
+            $user = helper::getUserData();
+            $user->canManage = false;
+            if ($evb !== null) {
+                $user->canManage = $evb->userCanManage();
+                if (!$user->canManage) {
+                    // never send other people's personal details to the browser
+                    $listVisible = $user->id > 0 ? $evb->options->userlistvisibletousers : $evb->options->userlistvisibletoguests;
+                    $evb->maskForViewer($user->email, !$listVisible);
+                    // a guest who has typed their email can see the amount paid on their own booking
+                    $evb->revealPaidFor($data->md5Email ?? null);
+                }
+            }
             $record = (object) [
                         'feedback' => $feedback,
-                        'evb' => helper::getEVBrecord($ewid, "Single"),
-                        'user' => helper::getUserData()
+                        'evb' => $evb,
+                        'user' => $user
             ];
 
             echo new JsonResponse($record);

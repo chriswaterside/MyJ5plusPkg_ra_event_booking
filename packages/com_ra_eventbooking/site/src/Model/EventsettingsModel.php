@@ -138,10 +138,42 @@ class EventsettingsModel extends ListModel {
         // Join over the created by field 'created_by'
         $query->join('LEFT', '#__users AS created_by ON created_by.id = a.created_by');
 
-        if (!Factory::getApplication()->getIdentity()->authorise('core.edit', 'com_ra_eventbooking')) {
+        $currentUser = Factory::getApplication()->getIdentity();
+        $canEditAny = $currentUser->authorise('core.edit', 'com_ra_eventbooking');
+        if (!$canEditAny) {
             $query->where('a.state = 1');
         } else {
-            $query->where('(a.state IN (0, 1))');
+            // status filter: '' = all, '1' = published, '0' = unpublished
+            $status = (string) $this->getState('filter.status');
+            if ($status === '1') {
+                $query->where('a.state = 1');
+            } elseif ($status === '0') {
+                $query->where('a.state = 0');
+            } else {
+                $query->where('(a.state IN (0, 1))');
+            }
+
+            // 'mine' (default) = events where the user is the booking contact, walk leader
+            // or creator (or the group contact for events with no contact set); 'all' = every event
+            $scope = (string) $this->getState('filter.mine');
+            if ($scope !== 'all') {
+                $uid = (int) $currentUser->id;
+                $contactSet = '"booking_contact_id"[[:space:]]*:[[:space:]]*"?[1-9]';
+                $conds = [
+                    'a.created_by = ' . $uid,
+                    'a.params REGEXP ' . $db->quote('"booking_contact_id"[[:space:]]*:[[:space:]]*"?' . $uid . '"?[[:space:]]*[,}]'),
+                    'a.params REGEXP ' . $db->quote('"walk_leader_id"[[:space:]]*:[[:space:]]*"?' . $uid . '"?[[:space:]]*[,}]'),
+                ];
+                try {
+                    $globalContact = (int) (Ra_eventbookingHelper::getRawGlobals()->booking_contact_id ?? 0);
+                } catch (\Throwable $e) {
+                    $globalContact = 0;
+                }
+                if ($globalContact === $uid) {
+                    $conds[] = 'a.params NOT REGEXP ' . $db->quote($contactSet);
+                }
+                $query->where('(' . implode(' OR ', $conds) . ')');
+            }
         }
 
         // Filter by search in title

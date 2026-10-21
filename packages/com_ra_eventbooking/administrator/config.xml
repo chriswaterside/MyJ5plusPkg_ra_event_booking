@@ -70,6 +70,7 @@
         >
             <option value="0">Optional</option>
             <option value="1">Mandatory</option>
+                <option value="2">Not requested (field not shown)</option>
         </field>
         <field name="maxguestattendees" 
                first="1" last="10" step="1" 
@@ -117,12 +118,16 @@
     </fieldset>
    
     <fieldset name="communications" description="Communication options" label="Communications">
+        <field name="spacer_contact_hr" type="spacer" hr="true" />
+        <field name="spacer_contact" type="spacer" label="&lt;strong&gt;Booking contact&lt;/strong&gt;&lt;br/&gt;&lt;small&gt;The default contact for events (the group contact).&lt;/small&gt;" />
         <field name="booking_contact_id" 
                type="Bookingcontact" 
                context="config"
                label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_CONTACT" 
                description="COM_RA_EVENTBOOKING_FORM_DESC_GROUP_CONTACT" 
         />
+        <field name="spacer_copies_hr" type="spacer" hr="true" />
+        <field name="spacer_copies" type="spacer" label="&lt;strong&gt;Copies of booking emails&lt;/strong&gt;&lt;br/&gt;&lt;small&gt;Copies of the emails sent when someone books, cancels or joins the waiting list.&lt;/small&gt;" />
         <field name="email_booking" 
                type="list" 
                default="individual" 
@@ -150,7 +155,19 @@
             <option value="1">Booking and waiting list changes</option>
         </field>
   
-        <field name="closingoption" 
+        <field name="copy_group_contact" 
+               type="list" 
+               default="0" 
+               showon="email_booking:individual,list"
+               label="Also copy the group contact" 
+               description="Should the group contact (set in the component Options) also be sent a copy of booking, cancellation and waiting list emails, as well as the event contact? The final booking list is always sent to the group contact." 
+        >
+            <option value="0">Never</option>
+            <option value="1">Yes</option>
+        </field>
+        <field name="spacer_closing_hr" type="spacer" hr="true" />
+        <field name="spacer_closing" type="spacer" label="&lt;strong&gt;Closing and final booking list&lt;/strong&gt;&lt;br/&gt;&lt;small&gt;When bookings close, and who is sent the final booking list. It is always sent to the booking contact, the group contact and the walk leader.&lt;/small&gt;" />
+<field name="closingoption" 
                type="list"        
                label="COM_RA_EVENTBOOKING_FORM_LBL_USERLISTCLOSING"
                description="COM_RA_EVENTBOOKING_FORM_DESC_USERLISTCLOSING">
@@ -180,12 +197,21 @@
             <option value="1">JYES</option>
         </field>
         <field name="task_comment" 
-               type="note" 
-               label="Set up task" 
+               type="taskwarning" 
                showon="send_booking_list_onclosed:1"
-               description="For this option to work a scheduled task must be set up, see Users Guide for details" 
-               class="alert alert-info" 
         />
+        <field name="spacer_emails_hr" type="spacer" hr="true" />
+        <field name="spacer_emails" type="spacer" label="&lt;strong&gt;Emails to people who have booked&lt;/strong&gt;&lt;br/&gt;&lt;small&gt;Emails sent to the people who have booked places.&lt;/small&gt;" />
+        <field name="notify_event_changed" 
+               type="list" 
+               default="date" 
+               label="Email bookers when walk is amended" 
+               description="Should people who have booked be emailed automatically when the walk is amended in Walks Manager? Contacts can always email bookers themselves from the booking list." 
+        >
+            <option value="none">Never</option>
+            <option value="date">Only if the date or time changes</option>
+            <option value="always">Whenever the walk is updated in Walks Manager</option>
+        </field>
         <field name="bookingemailtextrequired" 
                type="list" 
                label="Include Booking email text" 

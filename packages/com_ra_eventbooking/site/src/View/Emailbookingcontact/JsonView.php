@@ -34,8 +34,8 @@ class JsonView extends BaseJsonView {
 
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
             $to = $ebRecord->getEventContact();
-            if ($from->id > 0) {
-                $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($from->id);
+            $juser = Factory::getApplication()->getIdentity();
+            if ($juser->id > 0) { // logged in: use real identity, not posted details
                 $name = $juser->name;
                 $email = $juser->email;
             } else {

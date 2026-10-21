@@ -33,9 +33,10 @@ class JsonView extends BaseJsonView {
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $to = $ebRecord->blc->getArray();
 
-            $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($data->from->id);
+            $juser = Factory::getApplication()->getIdentity(); // sender is always the logged in user
             $from = new \stdClass();
             $from->email = $juser->email;
             $from->name = $juser->name;

@@ -5,6 +5,16 @@
                label="COM_USERS_FILTER_SEARCH_DESC"
                class="js-stools-search-string" />
       
+        <field name="mine" type="list" label="Events shown" default="mine" onchange="this.form.submit();">
+            <option value="mine">My events</option>
+            <option value="all">All events</option>
+        </field>
+        <field name="status" type="list" label="Status" default="" onchange="this.form.submit();">
+            <option value="">All (published and unpublished)</option>
+            <option value="1">Published</option>
+            <option value="0">Unpublished</option>
+        </field>
+
         <field name="creation_date.from" label="COM_RA_EVENTBOOKING_EVENTSETTINGS_CREATION_DATE_FILTER_FROM" type="calendar" onchange="this.form.submit();" filter="safehtml" class="inputbox" showtime="true" translateformat="true" hint="COM_RA_EVENTBOOKING_EVENTSETTINGS_CREATION_DATE_FILTER_FROM"/>
         <field name="creation_date.to" label="COM_RA_EVENTBOOKING_EVENTSETTINGS_CREATION_DATE_FILTER_TO" type="calendar" onchange="this.form.submit();" filter="safehtml" class="inputbox" showtime="true" translateformat="true" hint="COM_RA_EVENTBOOKING_EVENTSETTINGS_CREATION_DATE_FILTER_TO"/>
 

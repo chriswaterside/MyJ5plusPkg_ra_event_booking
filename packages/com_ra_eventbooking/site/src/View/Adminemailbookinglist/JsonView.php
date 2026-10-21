@@ -37,6 +37,7 @@ class JsonView extends BaseJsonView {
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $bookinglist = $ebRecord->getBookingTable($ebRecord->options->payment_required, $canEdit);
             $waitinglist = $ebRecord->getWaitingTable($canEdit);
 
@@ -53,7 +54,7 @@ class JsonView extends BaseJsonView {
 
             $mailTemplate = 'email_booking_list';
             $fields = $ebRecord->getAllEmailFields();
-            $fields['BOOKLIST'] = $bookinglist;
+            $fields['BOOKINGLIST'] = $bookinglist;
             $fields['WAITINGLIST'] = $waitinglist;
             $fields['REASON'] = "";
 

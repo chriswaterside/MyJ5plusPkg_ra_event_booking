@@ -31,12 +31,13 @@ class JsonView extends BaseJsonView {
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            helper::requireManager($ebRecord);
             $to = [$ebRecord->blc->getItemByMd5Email($data->to->md5Email)];
             if ($to === null) {
                 throw new \RuntimeException('Unable to find user record');
             }
 
-            $replyTo = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($data->from->id);
+            $replyTo = Factory::getApplication()->getIdentity(); // sender is always the logged in user
             if ($replyTo === null) {
                 throw new \RuntimeException('Unable to find sender');
             }
